@@ -80,6 +80,7 @@ public class MusicQuery {
                 .build();
 
         DynamoDB dynamoDB = new DynamoDB(client);
+
         AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
                 .withCredentials(new ProfileCredentialsProvider("default"))
@@ -91,46 +92,40 @@ public class MusicQuery {
             List<MusicItem> candidateSongs;
 
             /*
-             * Best query option:
-             * If artist and year are provided, use the LSI.
-             * LSI: artist-year-index
-             * PK = artist
-             * SK = year_title_album
+             * DynamoDB key queries are case-sensitive.
+             * So we first try efficient Query operations.
+             * If no result is found, we fall back to Scan and then use equalsIgnoreCase()
+             * inside matchesAllConditions().
              */
+
             if (!isBlank(artist) && !isBlank(year)) {
                 candidateSongs = queryByArtistAndYear(musicTable, s3Client, artist, year);
+
+                if (candidateSongs.isEmpty()) {
+                    candidateSongs = scanMusicTable(musicTable, s3Client);
+                }
             }
 
-            /*
-             * If artist is provided, use the main table partition key.
-             */
             else if (!isBlank(artist)) {
                 candidateSongs = queryByArtist(musicTable, s3Client, artist);
+
+                if (candidateSongs.isEmpty()) {
+                    candidateSongs = scanMusicTable(musicTable, s3Client);
+                }
             }
 
-            /*
-             * If album is provided but artist is not provided, use the GSI.
-             * GSI: album-artist-index
-             * PK = album
-             * SK = artist_title_year
-             */
             else if (!isBlank(album)) {
                 candidateSongs = queryByAlbum(musicTable, s3Client, album);
+
+                if (candidateSongs.isEmpty()) {
+                    candidateSongs = scanMusicTable(musicTable, s3Client);
+                }
             }
 
-            /*
-             * If only title/year is provided, we cannot directly use the main PK.
-             * So we use Scan for this query pattern.
-             */
             else {
                 candidateSongs = scanMusicTable(musicTable, s3Client);
             }
 
-            /*
-             * Apply AND condition for all entered fields.
-             * This matches the assignment requirement:
-             * multiple query conditions are connected by AND.
-             */
             for (MusicItem song : candidateSongs) {
                 if (matchesAllConditions(song, title, year, artist, album)) {
                     finalResults.add(song);
