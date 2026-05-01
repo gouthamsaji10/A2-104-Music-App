@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  music-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: music-backend
+    ports:
+      - "9090:8080"
+    environment:
+      AWS_PROFILE: default
+      AWS_REGION: us-east-1
+    volumes:
+      - ~/.aws:/root/.aws:ro
