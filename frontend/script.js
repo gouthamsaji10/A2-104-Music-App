@@ -1,8 +1,7 @@
-// Frontend for the AWS Music Subscription App.
-// For local testing, this calls the Spring Boot backend running on localhost:8080.
-// For AWS deployment, change API_BASE_URL to your EC2/ECS/API Gateway base URL.
+// Frontend for the AWS Music Subscription App
 
-const API_BASE_URL = "http://localhost:9090/api";
+// URL is fetched from config file
+const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
 
 let currentSubscriptionSongIds = new Set();
 let lastQuerySongs = [];

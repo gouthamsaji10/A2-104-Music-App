@@ -13,6 +13,11 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class MusicApiController {
 
+    /*
+     This controller is the main bridge between the frontend and backend services
+     The frontend only talks to these API endpoints, while the actual DynamoDB logic stays inside service classes
+     */
+
     @GetMapping("/health")
     public Map<String, Object> healthCheck() {
         Map<String, Object> response = new LinkedHashMap<>();
@@ -69,6 +74,12 @@ public class MusicApiController {
             @RequestParam(required = false, defaultValue = "") String artist,
             @RequestParam(required = false, defaultValue = "") String album
     ) {
+
+        /*
+         The user can search with one or more fields
+         The service decides whether to use a DynamoDB query or fallback scan depending on the input
+         */
+
         List<MusicQuery.MusicItem> songs =
                 MusicQuery.queryMusic(title, year, artist, album);
 
@@ -144,6 +155,11 @@ public class MusicApiController {
 
         return response;
     }
+
+    /*
+     These converter methods keep the API response structure consistent
+     Also make sure the frontend receives field names like song_id and image_url
+     */
 
     private Map<String, Object> convertMusicItemToMap(MusicQuery.MusicItem song) {
         Map<String, Object> map = new LinkedHashMap<>();
@@ -286,8 +302,8 @@ public class MusicApiController {
             response.put("user_name", user.getUserName());
 
             /*
-             * Password is intentionally not returned in the API response.
-             * It exists in DynamoDB only because the assignment allows plain text for simplicity.
+             Password is intentionally not returned in the API response
+             It exists in DynamoDB only
              */
         }
 

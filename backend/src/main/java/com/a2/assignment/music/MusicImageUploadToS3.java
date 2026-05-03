@@ -1,8 +1,6 @@
 package com.a2.assignment.music;
 
-// Built based on the AWS Java SDK style used in RMIT COSC2626 Practical Exercise 3 sample code.
-// This program reads 2026a2_songs.json, downloads unique artist images from img_url,
-// and uploads them to an S3 bucket under the artist-images/ prefix.
+// This program reads 2026a2_songs.json, downloads unique artist images from img_url and uploads them to an S3 bucket under the artist-images/ prefix.
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -33,6 +31,10 @@ public class MusicImageUploadToS3 {
 
     public static void main(String[] args) throws Exception {
 
+        /*
+         This class is normally run once
+         */
+
         File jsonFile = new File("2026a2_songs.json");
 
         if (!jsonFile.exists()) {
@@ -59,8 +61,8 @@ public class MusicImageUploadToS3 {
         Iterator<JsonNode> iter = songsNode.iterator();
 
         /*
-         * The same artist image URL appears many times in the JSON.
-         * This Set prevents downloading and uploading the same image repeatedly.
+         The same artist image URL appears many times in the JSON
+         This Set prevents downloading and uploading the same image repeatedly
          */
         Set<String> uploadedImageUrls = new HashSet<>();
 
@@ -149,6 +151,8 @@ public class MusicImageUploadToS3 {
 
     private static String getContentType(String fileName) {
         String lowerFileName = fileName.toLowerCase();
+
+         // Setting the content type helps browsers display the images correctly when they are accessed from S3
 
         if (lowerFileName.endsWith(".png")) {
             return "image/png";

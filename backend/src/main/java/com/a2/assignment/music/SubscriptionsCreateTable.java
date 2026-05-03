@@ -1,7 +1,5 @@
 package com.a2.assignment.music;
 
-// Built based on the AWS DynamoDB Java document-model style used in RMIT COSC2626 Practical Exercise 3 sample code.
-
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -36,35 +34,26 @@ public class SubscriptionsCreateTable {
                     .withTableName(TABLE_NAME)
 
                     /*
-                     * Main table key design:
-                     *
-                     * Partition key = email
-                     * Sort key = song_id
-                     *
-                     * Reason:
-                     * One user can subscribe to many songs.
-                     * So all subscriptions for one user can be retrieved using email.
-                     * song_id makes each subscribed song unique for that user.
+                     Main table key design:
+
+                     Partition key = email
+                     Sort key = song_id
+
+                     Reason:
+                     One user can subscribe to many songs.
+                     So all subscriptions for one user can be retrieved using email.
+                     song_id makes each subscribed song unique for that user.
                      */
                     .withKeySchema(
                             new KeySchemaElement("email", KeyType.HASH),
                             new KeySchemaElement("song_id", KeyType.RANGE)
                     )
 
-                    /*
-                     * Only key attributes need to be defined here.
-                     * Other attributes like title, artist, year, album, and s3_image_key
-                     * will be inserted later when the user subscribes to a song.
-                     */
                     .withAttributeDefinitions(
                             new AttributeDefinition("email", ScalarAttributeType.S),
                             new AttributeDefinition("song_id", ScalarAttributeType.S)
                     )
 
-                    /*
-                     * On-demand mode is simpler for this assignment.
-                     * No need to manually set read/write capacity.
-                     */
                     .withBillingMode(BillingMode.PAY_PER_REQUEST);
 
             Table table = dynamoDB.createTable(request);

@@ -1,7 +1,6 @@
 package com.a2.assignment.music;
 
-// Extra CRUD service for the login table.
-// Built using the same AWS SDK v1 DynamoDB document-model style used in the practical exercises.
+// Extra CRUD service for the login table
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
@@ -155,7 +154,6 @@ public class UserCrudService {
     private static AmazonDynamoDB createDynamoDBClient() {
         return AmazonDynamoDBClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
-                .withCredentials(new ProfileCredentialsProvider("default"))
                 .build();
     }
 

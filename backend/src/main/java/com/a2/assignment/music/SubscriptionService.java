@@ -1,7 +1,5 @@
 package com.a2.assignment.music;
 
-// Built based on the AWS DynamoDB Java document-model style used in RMIT COSC2626 Practical Exercise 3 sample code.
-
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,6 +25,8 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 
+// This service handles subscribing, listing subscriptions, and removing subscriptions
+
 public class SubscriptionService {
 
     private static final String MUSIC_TABLE = "music";
@@ -36,7 +36,7 @@ public class SubscriptionService {
     public static void main(String[] args) {
 
         /*
-         * Test this with an existing user and an existing song.
+         For testing with an existing user and an existing song
          */
         String email = "s41355980@gmail.com";
 
@@ -62,9 +62,6 @@ public class SubscriptionService {
             System.out.println(item);
         }
 
-        // To Remove the Subscription
-        // ActionResult removeResult = removeSubscription(email, song.getSongId());
-        // System.out.println(removeResult.getMessage());
     }
 
     public static ActionResult subscribeToSong(String email, String artist, String songId) {
@@ -80,11 +77,6 @@ public class SubscriptionService {
         Table subscriptionsTable = dynamoDB.getTable(SUBSCRIPTIONS_TABLE);
 
         try {
-            /*
-             * First get the song from the music table.
-             * We do not fully trust frontend data.
-             * The backend fetches the real song item from DynamoDB.
-             */
             Item song = musicTable.getItem("artist", artist, "song_id", songId);
 
             if (song == null) {
@@ -101,7 +93,7 @@ public class SubscriptionService {
                     .withString("s3_image_key", song.getString("s3_image_key"));
 
             /*
-             * This prevents duplicate subscription for the same user and same song.
+             To prevent duplicate subscription for the same user and same song
              */
             PutItemSpec putItemSpec = new PutItemSpec()
                     .withItem(subscriptionItem)
@@ -139,11 +131,11 @@ public class SubscriptionService {
 
         try {
             /*
-             * subscriptions table:
-             * PK = email
-             * SK = song_id
-             *
-             * This query returns all songs subscribed by one user.
+             subscriptions table:
+             PK = email
+             SK = song_id
+
+             Query returns all songs subscribed by one user
              */
             QuerySpec querySpec = new QuerySpec()
                     .withKeyConditionExpression("email = :email")
@@ -214,14 +206,12 @@ public class SubscriptionService {
     private static AmazonDynamoDB createDynamoDBClient() {
         return AmazonDynamoDBClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
-                .withCredentials(new ProfileCredentialsProvider("default"))
                 .build();
     }
 
     private static AmazonS3 createS3Client() {
         return AmazonS3ClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
-                .withCredentials(new ProfileCredentialsProvider("default"))
                 .build();
     }
 

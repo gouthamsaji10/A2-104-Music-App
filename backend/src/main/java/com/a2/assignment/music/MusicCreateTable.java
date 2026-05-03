@@ -22,6 +22,8 @@ import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.amazonaws.services.dynamodbv2.model.ResourceInUseException;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 
+// This is a one time setup to create the music table
+
 public class MusicCreateTable {
 
     public static void main(String[] args) {
@@ -42,9 +44,9 @@ public class MusicCreateTable {
                     .withTableName(tableName)
 
                     /*
-                     * Main table key:
-                     * Partition key = artist
-                     * Sort key = song_id
+                     Main table key:
+                     Partition key = artist
+                     Sort key = song_id
                      */
                     .withKeySchema(
                             new KeySchemaElement("artist", KeyType.HASH),
@@ -52,9 +54,7 @@ public class MusicCreateTable {
                     )
 
                     /*
-                     * All attributes used as table/index keys must be defined here.
-                     * Normal attributes like title, year, album, image_url do not need to be defined here
-                     * unless they are used as key attributes.
+                     All attributes used as table/index keys are to be defined here.
                      */
                     .withAttributeDefinitions(Arrays.asList(
                             new AttributeDefinition("artist", ScalarAttributeType.S),
@@ -65,19 +65,17 @@ public class MusicCreateTable {
                     ))
 
                     /*
-                     * On-demand mode is simpler for the assignment.
-                     * No read/write capacity numbers are needed.
+                     On-demand mode is simpler for the assignment
                      */
                     .withBillingMode(BillingMode.PAY_PER_REQUEST)
 
                     /*
-                     * Local Secondary Index:
-                     * Same partition key as main table: artist
-                     * Different sort key: year_title_album
-                     *
-                     * Purpose:
-                     * Efficiently query songs by artist and year.
-                     * Example: Jimmy Buffett in 1974
+                     Local Secondary Index:
+                     Same partition key as main table: artist
+                     Different sort key: year_title_album
+
+                     Purpose:
+                     Efficiently query songs by artist and year.
                      */
                     .withLocalSecondaryIndexes(
                             new LocalSecondaryIndex()
@@ -92,13 +90,12 @@ public class MusicCreateTable {
                     )
 
                     /*
-                     * Global Secondary Index:
-                     * Partition key = album
-                     * Sort key = artist_title_year
-                     *
-                     * Purpose:
-                     * Query songs by album, then filter/check artist, title, or year.
-                     * Example: Taylor Swift songs in album Fearless
+                     Global Secondary Index:
+                     Partition key = album
+                     Sort key = artist_title_year
+
+                     Purpose:
+                     Query songs by album, then filter/check artist, title, or year.
                      */
                     .withGlobalSecondaryIndexes(
                             new GlobalSecondaryIndex()

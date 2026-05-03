@@ -1,6 +1,6 @@
 package com.a2.assignment.music;
 
-// Built based on the AWS DynamoDB Java document-model style used in RMIT COSC2626 Practical Exercise 3 sample code.
+// Reference on the RMIT COSC2626 Practical Exercise 3 sample code.
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
@@ -10,6 +10,8 @@ import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
 
+// This service contains the actual login validation logic used by the API.
+
 public class LoginService {
 
     private static final String TABLE_NAME = "login";
@@ -17,8 +19,7 @@ public class LoginService {
     public static void main(String[] args) {
 
         /*
-         * This main method is only for testing.
-         * Later, the backend API will call validateLogin() directly.
+         * This main method is for testing purposes
          */
 
         String email = "s41355980@gmail.com";
@@ -37,13 +38,17 @@ public class LoginService {
 
     public static LoginResult validateLogin(String email, String password) {
 
+        /*
+         Basic validation is done before calling DynamoDB
+         This avoids unnecessary database calls when the frontend sends empty values
+         */
+
         if (isBlank(email) || isBlank(password)) {
             return new LoginResult(false, null, null);
         }
 
         AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
-                .withCredentials(new ProfileCredentialsProvider("default"))
                 .build();
 
         DynamoDB dynamoDB = new DynamoDB(client);
@@ -51,14 +56,16 @@ public class LoginService {
 
         try {
             /*
-             * The login table uses email as the partition key.
-             * So we can directly get the user item using email.
+             The login table uses email as the partition key.
+             Hence we can directly get the user item using email.
              */
             Item item = table.getItem("email", email);
 
             if (item == null) {
                 return new LoginResult(false, null, null);
             }
+
+            // In a real production application, passwords should be hashed
 
             String storedPassword = item.getString("password");
             String userName = item.getString("user_name");
@@ -80,6 +87,11 @@ public class LoginService {
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
+
+    /*
+     This small result object keeps the login response clean.
+     The controller can simply check whether the login is valid and return the correct frontend response.
+     */
 
     public static class LoginResult {
         private boolean valid;

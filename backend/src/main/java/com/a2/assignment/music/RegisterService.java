@@ -1,7 +1,5 @@
 package com.a2.assignment.music;
 
-// Built based on the AWS DynamoDB Java document-model style used in RMIT COSC2626 Practical Exercise 3 sample code.
-
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -19,8 +17,7 @@ public class RegisterService {
     public static void main(String[] args) {
 
         /*
-         * This main method is only for testing.
-         * Later, the backend API will call registerUser() directly.
+         This main method is only for testing
          */
 
         String email = "s41355980@gmail.com";
@@ -45,7 +42,6 @@ public class RegisterService {
 
         AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
-                .withCredentials(new ProfileCredentialsProvider("default"))
                 .build();
 
         DynamoDB dynamoDB = new DynamoDB(client);
@@ -53,8 +49,8 @@ public class RegisterService {
 
         try {
             /*
-             * First, check if the email already exists.
-             * Email is the partition key in the login table.
+             First, check if the email already exists
+             Email is the partition key in the login table
              */
             Item existingUser = table.getItem("email", email);
 
@@ -62,18 +58,17 @@ public class RegisterService {
                 return new RegisterResult(false, "The email already exists", null, null);
             }
 
-            /*
-             * If email does not exist, insert the new user.
-             */
+            //If email does not exist, insert the new user
+
             Item newUser = new Item()
                     .withPrimaryKey("email", email)
                     .withString("user_name", userName)
                     .withString("password", password);
 
             /*
-             * This condition gives extra protection.
-             * Even if two users try to register the same email at the same time,
-             * DynamoDB will not overwrite the existing account.
+             This condition gives extra protection
+             Even if two users try to register the same email at the same time,
+             DynamoDB will not overwrite the existing account
              */
             PutItemSpec putItemSpec = new PutItemSpec()
                     .withItem(newUser)

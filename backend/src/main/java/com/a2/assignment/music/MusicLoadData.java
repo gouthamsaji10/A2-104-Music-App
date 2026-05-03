@@ -1,6 +1,6 @@
 package com.a2.assignment.music;
 
-// Reference - RMIT COSC2626 Practical Exercise 3 sample code structure.
+// Reference from RMIT COSC2626 Practical Exercise 3 sample code
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -24,11 +24,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class MusicLoadData {
 
+    // This setup class loads the provided song dataset into the music DynamoDB table.
+
     public static void main(String[] args) throws Exception {
 
         /*
-         * This connects to real AWS DynamoDB, not DynamoDB Local.
-         * Make sure your AWS Academy credentials are updated in your default profile.
+        This connects to real AWS DynamoDB
+/       This setup class loads the provided song dataset into the music DynamoDB table
          */
         AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
@@ -50,17 +52,6 @@ public class MusicLoadData {
         JsonParser parser = new JsonFactory().createParser(jsonFile);
         JsonNode rootNode = new ObjectMapper().readTree(parser);
 
-        /*
-         * Your JSON file structure is:
-         * {
-         *   "songs": [
-         *      { song item 1 },
-         *      { song item 2 }
-         *   ]
-         * }
-         *
-         * So we must read rootNode.path("songs"), not rootNode.iterator().
-         */
         JsonNode songsNode = rootNode.path("songs");
         Iterator<JsonNode> iter = songsNode.iterator();
 
@@ -77,12 +68,6 @@ public class MusicLoadData {
             String artist = currentNode.path("artist").asText();
             String year = currentNode.path("year").asText();
             String album = currentNode.path("album").asText();
-
-            /*
-             * The JSON file uses img_url.
-             * The assignment asks for image_url.
-             * So we read img_url and store it in DynamoDB as image_url.
-             */
             String imageUrl = currentNode.path("img_url").asText();
 
             try {
@@ -90,33 +75,25 @@ public class MusicLoadData {
                     throw new Exception("Missing required song field.");
                 }
 
-                /*
-                 * JSON has no song_id.
-                 * We generate one using artist + title + year + album.
-                 * A hash avoids problems with special characters in titles such as #40 and #41.
-                 */
+                 // JSON has no song_id so we generate one using artist + title + year + album.
                 String songId = generateSongId(artist, title, year, album);
 
                 /*
-                 * These extra attributes support our LSI and GSI.
-                 *
-                 * LSI:
-                 * artist-year-index
-                 * PK = artist
-                 * SK = year_title_album
-                 *
-                 * GSI:
-                 * album-artist-index
-                 * PK = album
-                 * SK = artist_title_year
+                 These extra attributes support our LSI and GSI.
+
+                 LSI:
+                 artist-year-index
+                 PK = artist
+                 SK = year_title_album
+
+                 GSI:
+                 album-artist-index
+                 PK = album
+                 SK = artist_title_year
                  */
                 String yearTitleAlbum = year + "#" + title + "#" + album;
                 String artistTitleYear = artist + "#" + title + "#" + year;
 
-                /*
-                 * Later, when we upload images to S3, we can use this key.
-                 * Example: artist-images/TaylorSwift.jpg
-                 */
                 String s3ImageKey = "artist-images/" + getFileNameFromUrl(imageUrl);
 
                 Item item = new Item()
@@ -177,10 +154,6 @@ public class MusicLoadData {
             hexString.append(String.format("%02x", b));
         }
 
-        /*
-         * We only need a shorter stable ID for this assignment dataset.
-         * The original song details are still stored separately, so no data is lost.
-         */
         return hexString.substring(0, 24);
     }
 

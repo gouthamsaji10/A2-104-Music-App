@@ -1,7 +1,6 @@
 package com.a2.assignment.music;
 
 // Extra CRUD service for the music table.
-// Built using the same AWS SDK v1 DynamoDB document-model style used in the practical exercises.
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -215,7 +214,6 @@ public class MusicCrudService {
     private static AmazonDynamoDB createDynamoDBClient() {
         return AmazonDynamoDBClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
-                .withCredentials(new ProfileCredentialsProvider("default"))
                 .build();
     }
 

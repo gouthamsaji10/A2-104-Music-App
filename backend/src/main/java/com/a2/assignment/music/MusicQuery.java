@@ -1,6 +1,6 @@
 package com.a2.assignment.music;
 
-// Built based on the AWS DynamoDB Java document-model style used in RMIT COSC2626 Practical Exercise 3 sample code.
+// This service handles the music search feature used by the frontend
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -36,10 +36,6 @@ public class MusicQuery {
 
     public static void main(String[] args) {
 
-        /*
-         * Test case 1:
-         * Marker-style query: Jimmy Buffett in 1974
-         */
         List<MusicItem> results = queryMusic("", "1974", "Jimmy Buffett", "");
 
         if (results.isEmpty()) {
@@ -49,15 +45,6 @@ public class MusicQuery {
                 System.out.println(song);
             }
         }
-
-        /*
-         * Test case 2:
-         * Taylor Swift in album Fearless
-         */
-        // List<MusicItem> results2 = queryMusic("", "", "Taylor Swift", "Fearless");
-        // for (MusicItem song : results2) {
-        //     System.out.println(song);
-        // }
     }
 
     public static List<MusicItem> queryMusic(String title, String year, String artist, String album) {
@@ -76,27 +63,18 @@ public class MusicQuery {
 
         AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
-                .withCredentials(new ProfileCredentialsProvider("default"))
                 .build();
 
         DynamoDB dynamoDB = new DynamoDB(client);
 
         AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
                 .withRegion(Regions.US_EAST_1)
-                .withCredentials(new ProfileCredentialsProvider("default"))
                 .build();
 
         Table musicTable = dynamoDB.getTable(MUSIC_TABLE);
 
         try {
             List<MusicItem> candidateSongs;
-
-            /*
-             * DynamoDB key queries are case-sensitive.
-             * So we first try efficient Query operations.
-             * If no result is found, we fall back to Scan and then use equalsIgnoreCase()
-             * inside matchesAllConditions().
-             */
 
             if (!isBlank(artist) && !isBlank(year)) {
                 candidateSongs = queryByArtistAndYear(musicTable, s3Client, artist, year);
@@ -250,6 +228,8 @@ public class MusicQuery {
         if (isBlank(s3ImageKey)) {
             return "";
         }
+
+        // The image bucket can stay private while the frontend still receives temporary access to display images
 
         try {
             Date expiration = new Date();

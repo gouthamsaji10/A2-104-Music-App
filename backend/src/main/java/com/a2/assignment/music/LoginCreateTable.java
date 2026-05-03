@@ -19,6 +19,11 @@ import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ResourceInUseException;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 
+/*
+ * This file is mainly used during setup.
+ * The running backend does not call this class directly after the table has been created.
+ */
+
 public class LoginCreateTable {
 
     private static final String TABLE_NAME = "login";
@@ -49,13 +54,14 @@ public class LoginCreateTable {
                             new KeySchemaElement("email", KeyType.HASH)
                     )
 
-                    // Only key attributes need to be defined here.
-                    // user_name and password are normal attributes, so they do not need to be defined here.
                     .withAttributeDefinitions(
                             new AttributeDefinition("email", ScalarAttributeType.S)
                     )
 
-                    // On-demand capacity is simpler for this assignment.
+                    /*
+                     Pay-per-request is suitable for this project because the traffic is small
+                     Also avoids manually calculating read and write capacity
+                     */
                     .withBillingMode(BillingMode.PAY_PER_REQUEST);
 
             Table table = dynamoDB.createTable(request);
@@ -83,13 +89,13 @@ public class LoginCreateTable {
         int failedCount = 0;
 
         /*
-         * Assignment pattern:
-         * email:     student id + 0 to 9
-         * user_name: name + 0 to 9
-         * password:  012345, 123456, ..., 901234
-         *
-         * User requested first email as:
-         * s41355980@gmail.com
+         default table creation pattern:
+         email:     student id + 0 to 9
+         user_name: name + 0 to 9
+         password:  012345, 123456, ... 901234
+
+         first email :
+         s41355980@gmail.com
          */
         String emailPrefix = "s4135598";
         String emailDomain = "@gmail.com";
@@ -106,6 +112,7 @@ public class LoginCreateTable {
                         .withString("user_name", userName)
                         .withString("password", password);
 
+                // This condition protects existing users from being overwritten if the setup is run again
                 PutItemSpec putItemSpec = new PutItemSpec()
                         .withItem(item)
                         .withConditionExpression("attribute_not_exists(email)");
