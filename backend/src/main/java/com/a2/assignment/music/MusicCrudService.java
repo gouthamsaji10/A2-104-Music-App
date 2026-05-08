@@ -1,6 +1,7 @@
 package com.a2.assignment.music;
 
-// Extra CRUD service for the music table.
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

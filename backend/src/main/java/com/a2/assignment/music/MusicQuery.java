@@ -1,5 +1,8 @@
 package com.a2.assignment.music;
 
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+
 // This service handles the music search feature used by the frontend
 
 import java.net.URL;

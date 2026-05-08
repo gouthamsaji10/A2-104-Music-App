@@ -1,6 +1,8 @@
 package com.a2.assignment.music;
 
-// Reference on the RMIT COSC2626 Practical Exercise 3 sample code.
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+// RMIT COSC2626 Practical Exercise 3 sample code.
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;

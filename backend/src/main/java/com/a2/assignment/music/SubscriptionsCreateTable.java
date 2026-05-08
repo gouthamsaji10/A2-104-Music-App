@@ -1,5 +1,8 @@
 package com.a2.assignment.music;
 
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;

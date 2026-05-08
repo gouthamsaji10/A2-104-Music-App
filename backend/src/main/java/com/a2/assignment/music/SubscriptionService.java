@@ -1,5 +1,8 @@
 package com.a2.assignment.music;
 
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;

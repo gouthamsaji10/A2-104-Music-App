@@ -1,5 +1,8 @@
 package com.a2.assignment.music;
 
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+
 // This program reads 2026a2_songs.json, downloads unique artist images from img_url and uploads them to an S3 bucket under the artist-images/ prefix.
 
 import java.io.ByteArrayInputStream;

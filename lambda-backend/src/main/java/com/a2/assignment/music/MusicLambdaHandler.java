@@ -1,5 +1,8 @@
 package com.a2.assignment.music;
 
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -38,11 +41,17 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
             String path = normalizePath(request.getPath());
 
             if ("OPTIONS".equalsIgnoreCase(method)) {
-                return response(200, Map.of("message", "CORS preflight OK"));
+                return response(200, Map.of(
+                        "success", true,
+                        "message", "CORS preflight OK"
+                ));
             }
 
             if ("GET".equalsIgnoreCase(method) && "/health".equals(path)) {
-                return response(200, Map.of("message", "Java Lambda backend is working with DynamoDB"));
+                return response(200, Map.of(
+                        "success", true,
+                        "message", "Java Lambda backend is working with DynamoDB"
+                ));
             }
 
             // Register and login
@@ -76,6 +85,11 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
                 }
             }
 
+            // Music routes for frontend query
+            if ("GET".equalsIgnoreCase(method) && "/music/query".equals(path)) {
+                return queryMusicForFrontend(request);
+            }
+
             // Music CRUD
             if ("GET".equalsIgnoreCase(method) && "/music".equals(path)) {
                 Map<String, String> queryParams = request.getQueryStringParameters();
@@ -96,7 +110,10 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
                 String songId = getPathPart(path, 3);
 
                 if (artist == null || songId == null) {
-                    return response(400, Map.of("error", "Both artist and song_id are required in the path"));
+                    return response(400, Map.of(
+                            "success", false,
+                            "message", "Both artist and song_id are required in the path"
+                    ));
                 }
 
                 Map<String, AttributeValue> musicKey = new HashMap<>();
@@ -117,14 +134,57 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
                 }
             }
 
-            // Subscription CRUD
-            if ("GET".equalsIgnoreCase(method) && path.startsWith("/subscriptions/")) {
-                String email = getPathPart(path, 2);
-                return querySubscriptionsByEmail(email);
+            // Subscription routes used by existing frontend:
+            if ("GET".equalsIgnoreCase(method) && "/subscriptions".equals(path)) {
+                Map<String, String> params = request.getQueryStringParameters();
+                String email = getQueryParam(params, "email");
+
+                if (isBlank(email)) {
+                    return response(400, Map.of(
+                            "success", false,
+                            "message", "email is required"
+                    ));
+                }
+
+                return querySubscriptionsForFrontend(email);
+            }
+
+            if ("DELETE".equalsIgnoreCase(method) && "/subscriptions".equals(path)) {
+                Map<String, String> params = request.getQueryStringParameters();
+                String email = getQueryParam(params, "email");
+                String songId = getQueryParam(params, "song_id");
+
+                if (isBlank(email) || isBlank(songId)) {
+                    return response(400, Map.of(
+                            "success", false,
+                            "message", "email and song_id are required"
+                    ));
+                }
+
+                Map<String, AttributeValue> subscriptionKey = new HashMap<>();
+                subscriptionKey.put("email", new AttributeValue().withS(email));
+                subscriptionKey.put("song_id", new AttributeValue().withS(songId));
+
+                dynamoDb.deleteItem(new DeleteItemRequest()
+                        .withTableName(SUBSCRIPTIONS_TABLE)
+                        .withKey(subscriptionKey));
+
+                return response(200, Map.of(
+                        "success", true,
+                        "message", "Subscription removed successfully"
+                ));
             }
 
             if ("POST".equalsIgnoreCase(method) && "/subscriptions".equals(path)) {
                 return createSubscription(request);
+            }
+
+            // RESTful subscription routes also kept:
+            // GET /subscriptions/{email}
+            // DELETE /subscriptions/{email}/{song_id}
+            if ("GET".equalsIgnoreCase(method) && path.startsWith("/subscriptions/")) {
+                String email = getPathPart(path, 2);
+                return querySubscriptionsByEmail(email);
             }
 
             if ("DELETE".equalsIgnoreCase(method) && path.startsWith("/subscriptions/")) {
@@ -132,7 +192,10 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
                 String songId = getPathPart(path, 3);
 
                 if (email == null || songId == null) {
-                    return response(400, Map.of("error", "Both email and song_id are required in the path"));
+                    return response(400, Map.of(
+                            "success", false,
+                            "message", "Both email and song_id are required in the path"
+                    ));
                 }
 
                 Map<String, AttributeValue> subscriptionKey = new HashMap<>();
@@ -143,14 +206,16 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
             }
 
             return response(404, Map.of(
-                    "error", "Route not found",
+                    "success", false,
+                    "message", "Route not found",
                     "method", method,
                     "path", path
             ));
 
         } catch (Exception e) {
             return response(500, Map.of(
-                    "error", "Internal server error",
+                    "success", false,
+                    "message", "Internal server error",
                     "details", e.getMessage()
             ));
         }
@@ -160,7 +225,10 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         Map<String, Object> body = getBodyMap(request);
 
         if (!body.containsKey("email")) {
-            return response(400, Map.of("error", "email is required"));
+            return response(400, Map.of(
+                    "success", false,
+                    "message", "email is required"
+            ));
         }
 
         Map<String, AttributeValue> item = jsonToItem(body);
@@ -173,10 +241,16 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
 
             dynamoDb.putItem(putItemRequest);
 
-            return response(201, Map.of("message", "User registered successfully"));
+            return response(201, Map.of(
+                    "success", true,
+                    "message", "Registration successful"
+            ));
 
         } catch (ConditionalCheckFailedException e) {
-            return response(409, Map.of("error", "User already exists"));
+            return response(409, Map.of(
+                    "success", false,
+                    "message", "The email already exists"
+            ));
         }
     }
 
@@ -186,8 +260,11 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         String email = stringValue(body.get("email"));
         String password = stringValue(body.get("password"));
 
-        if (email == null) {
-            return response(400, Map.of("error", "email is required"));
+        if (email == null || email.isBlank()) {
+            return response(400, Map.of(
+                    "success", false,
+                    "message", "email is required"
+            ));
         }
 
         GetItemResult result = dynamoDb.getItem(new GetItemRequest()
@@ -195,22 +272,35 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
                 .withKey(key("email", email)));
 
         if (result.getItem() == null || result.getItem().isEmpty()) {
-            return response(401, Map.of("error", "Invalid email or password"));
+            return response(401, Map.of(
+                    "success", false,
+                    "message", "email or password is invalid"
+            ));
         }
 
         AttributeValue storedPasswordValue = result.getItem().get("password");
 
-        if (storedPasswordValue != null && password != null) {
-            String storedPassword = storedPasswordValue.getS();
+        if (storedPasswordValue == null || storedPasswordValue.getS() == null || password == null) {
+            return response(401, Map.of(
+                    "success", false,
+                    "message", "email or password is invalid"
+            ));
+        }
 
-            if (!password.equals(storedPassword)) {
-                return response(401, Map.of("error", "Invalid email or password"));
-            }
+        String storedPassword = storedPasswordValue.getS();
+
+        if (!password.equals(storedPassword)) {
+            return response(401, Map.of(
+                    "success", false,
+                    "message", "email or password is invalid"
+            ));
         }
 
         return response(200, Map.of(
+                "success", true,
                 "message", "Login successful",
-                "email", email
+                "email", email,
+                "user_name", getStringAttribute(result.getItem(), "user_name", email)
         ));
     }
 
@@ -218,28 +308,81 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         Map<String, Object> body = getBodyMap(request);
 
         if (!body.containsKey("artist") || !body.containsKey("song_id")) {
-            return response(400, Map.of("error", "artist and song_id are required"));
+            return response(400, Map.of(
+                    "success", false,
+                    "message", "artist and song_id are required"
+            ));
         }
 
         dynamoDb.putItem(new PutItemRequest()
                 .withTableName(MUSIC_TABLE)
                 .withItem(jsonToItem(body)));
 
-        return response(201, Map.of("message", "Music item created successfully"));
+        return response(201, Map.of(
+                "success", true,
+                "message", "Music item created successfully"
+        ));
     }
 
     private APIGatewayProxyResponseEvent createSubscription(APIGatewayProxyRequestEvent request) {
         Map<String, Object> body = getBodyMap(request);
 
         if (!body.containsKey("email") || !body.containsKey("song_id")) {
-            return response(400, Map.of("error", "email and song_id are required"));
+            return response(400, Map.of(
+                    "success", false,
+                    "message", "email and song_id are required"
+            ));
         }
 
-        dynamoDb.putItem(new PutItemRequest()
-                .withTableName(SUBSCRIPTIONS_TABLE)
-                .withItem(jsonToItem(body)));
+        try {
+            PutItemRequest putItemRequest = new PutItemRequest()
+                    .withTableName(SUBSCRIPTIONS_TABLE)
+                    .withItem(jsonToItem(body))
+                    .withConditionExpression("attribute_not_exists(email) AND attribute_not_exists(song_id)");
 
-        return response(201, Map.of("message", "Subscription created successfully"));
+            dynamoDb.putItem(putItemRequest);
+
+            return response(201, Map.of(
+                    "success", true,
+                    "message", "Song subscribed successfully"
+            ));
+
+        } catch (ConditionalCheckFailedException e) {
+            return response(409, Map.of(
+                    "success", false,
+                    "message", "Song is already subscribed"
+            ));
+        }
+    }
+
+    private APIGatewayProxyResponseEvent queryMusicForFrontend(APIGatewayProxyRequestEvent request) {
+        Map<String, String> params = request.getQueryStringParameters();
+
+        String title = getQueryParam(params, "title");
+        String year = getQueryParam(params, "year");
+        String artist = getQueryParam(params, "artist");
+        String album = getQueryParam(params, "album");
+
+        ScanResult result = dynamoDb.scan(new ScanRequest().withTableName(MUSIC_TABLE));
+        List<Map<String, Object>> songs = itemsToList(result.getItems());
+
+        List<Map<String, Object>> filteredSongs = new ArrayList<>();
+
+        for (Map<String, Object> song : songs) {
+            boolean matchesTitle = isBlank(title) || containsIgnoreCase(song.get("title"), title);
+            boolean matchesYear = isBlank(year) || containsIgnoreCase(song.get("year"), year);
+            boolean matchesArtist = isBlank(artist) || containsIgnoreCase(song.get("artist"), artist);
+            boolean matchesAlbum = isBlank(album) || containsIgnoreCase(song.get("album"), album);
+
+            if (matchesTitle && matchesYear && matchesArtist && matchesAlbum) {
+                filteredSongs.add(song);
+            }
+        }
+
+        return response(200, Map.of(
+                "success", true,
+                "songs", filteredSongs
+        ));
     }
 
     private APIGatewayProxyResponseEvent queryMusicByArtist(String artist) {
@@ -260,6 +403,33 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         return response(200, itemsToList(result.getItems()));
     }
 
+    private APIGatewayProxyResponseEvent querySubscriptionsForFrontend(String email) {
+        Map<String, String> names = new HashMap<>();
+        names.put("#email", "email");
+
+        Map<String, AttributeValue> values = new HashMap<>();
+        values.put(":email", new AttributeValue().withS(email));
+
+        QueryRequest queryRequest = new QueryRequest()
+                .withTableName(SUBSCRIPTIONS_TABLE)
+                .withKeyConditionExpression("#email = :email")
+                .withExpressionAttributeNames(names)
+                .withExpressionAttributeValues(values);
+
+        QueryResult result = dynamoDb.query(queryRequest);
+
+        List<Map<String, Object>> subscriptions = new ArrayList<>();
+
+        for (Map<String, AttributeValue> subscriptionItem : result.getItems()) {
+            subscriptions.add(enrichSubscriptionWithMusic(subscriptionItem));
+        }
+
+        return response(200, Map.of(
+                "success", true,
+                "subscriptions", subscriptions
+        ));
+    }
+
     private APIGatewayProxyResponseEvent querySubscriptionsByEmail(String email) {
         Map<String, String> names = new HashMap<>();
         names.put("#email", "email");
@@ -275,7 +445,13 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
 
         QueryResult result = dynamoDb.query(queryRequest);
 
-        return response(200, itemsToList(result.getItems()));
+        List<Map<String, Object>> subscriptions = new ArrayList<>();
+
+        for (Map<String, AttributeValue> subscriptionItem : result.getItems()) {
+            subscriptions.add(enrichSubscriptionWithMusic(subscriptionItem));
+        }
+
+        return response(200, subscriptions);
     }
 
     private APIGatewayProxyResponseEvent scanTable(String tableName) {
@@ -289,7 +465,10 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
                 .withKey(key));
 
         if (result.getItem() == null || result.getItem().isEmpty()) {
-            return response(404, Map.of("error", "Item not found"));
+            return response(404, Map.of(
+                    "success", false,
+                    "message", "Item not found"
+            ));
         }
 
         return response(200, itemToMap(result.getItem()));
@@ -325,7 +504,10 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         }
 
         if (updateParts.isEmpty()) {
-            return response(400, Map.of("error", "No updatable fields provided"));
+            return response(400, Map.of(
+                    "success", false,
+                    "message", "No updatable fields provided"
+            ));
         }
 
         UpdateItemRequest updateItemRequest = new UpdateItemRequest()
@@ -339,6 +521,7 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         UpdateItemResult result = dynamoDb.updateItem(updateItemRequest);
 
         return response(200, Map.of(
+                "success", true,
                 "message", "Item updated successfully",
                 "item", itemToMap(result.getAttributes())
         ));
@@ -349,7 +532,10 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
                 .withTableName(tableName)
                 .withKey(key));
 
-        return response(200, Map.of("message", "Item deleted successfully"));
+        return response(200, Map.of(
+                "success", true,
+                "message", "Item deleted successfully"
+        ));
     }
 
     private Map<String, AttributeValue> key(String keyName, String keyValue) {
@@ -457,6 +643,72 @@ public class MusicLambdaHandler implements RequestHandler<APIGatewayProxyRequest
         }
 
         return URLDecoder.decode(parts[index], StandardCharsets.UTF_8);
+    }
+
+    private String getQueryParam(Map<String, String> params, String key) {
+        if (params == null || !params.containsKey(key)) {
+            return "";
+        }
+
+        return params.get(key);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private boolean containsIgnoreCase(Object fieldValue, String searchValue) {
+        if (fieldValue == null || searchValue == null) {
+            return false;
+        }
+
+        return String.valueOf(fieldValue).toLowerCase().contains(searchValue.toLowerCase());
+    }
+
+    private String getStringAttribute(Map<String, AttributeValue> item, String fieldName, String fallback) {
+        if (item == null || !item.containsKey(fieldName) || item.get(fieldName).getS() == null) {
+            return fallback;
+        }
+
+        return item.get(fieldName).getS();
+    }
+
+    private Map<String, Object> enrichSubscriptionWithMusic(Map<String, AttributeValue> subscriptionItem) {
+        Map<String, Object> subscription = itemToMap(subscriptionItem);
+
+        String artist = stringFromItem(subscriptionItem, "artist");
+        String songId = stringFromItem(subscriptionItem, "song_id");
+
+        if (artist == null || songId == null) {
+            return subscription;
+        }
+
+        Map<String, AttributeValue> musicKey = new HashMap<>();
+        musicKey.put("artist", new AttributeValue().withS(artist));
+        musicKey.put("song_id", new AttributeValue().withS(songId));
+
+        GetItemResult musicResult = dynamoDb.getItem(new GetItemRequest()
+                .withTableName(MUSIC_TABLE)
+                .withKey(musicKey));
+
+        if (musicResult.getItem() == null || musicResult.getItem().isEmpty()) {
+            return subscription;
+        }
+
+        Map<String, Object> music = itemToMap(musicResult.getItem());
+
+        subscription.putAll(music);
+        subscription.put("email", stringFromItem(subscriptionItem, "email"));
+
+        return subscription;
+    }
+
+    private String stringFromItem(Map<String, AttributeValue> item, String fieldName) {
+        if (item == null || !item.containsKey(fieldName) || item.get(fieldName).getS() == null) {
+            return null;
+        }
+
+        return item.get(fieldName).getS();
     }
 
     private String stringValue(Object value) {

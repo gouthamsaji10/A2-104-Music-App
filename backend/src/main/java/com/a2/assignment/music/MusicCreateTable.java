@@ -1,6 +1,8 @@
 package com.a2.assignment.music;
 
-// Reference - RMIT COSC2626 Practical Exercise 3 sample structure.
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+// RMIT COSC2626 Practical Exercise 3 sample code.
 
 import java.util.Arrays;
 

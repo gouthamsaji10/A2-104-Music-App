@@ -1,5 +1,8 @@
 package com.a2.assignment.music;
 
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+
 // Extra CRUD service for the login table
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;

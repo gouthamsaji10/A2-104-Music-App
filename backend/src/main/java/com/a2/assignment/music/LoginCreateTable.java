@@ -1,6 +1,8 @@
 package com.a2.assignment.music;
 
-// Reference RMIT COSC2626 Practical Exercise 3 sample code.
+// References:
+// the official AWS documentation: https://docs.aws.amazon.com/
+// RMIT COSC2626 Practical Exercise 3 sample code.
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
@@ -95,10 +97,10 @@ public class LoginCreateTable {
          password:  012345, 123456, ... 901234
 
          first email :
-         s41355980@gmail.com
+         s41355980@student.rmit.edu.au.com
          */
         String emailPrefix = "s4135598";
-        String emailDomain = "@gmail.com";
+        String emailDomain = "@student.rmit.edu.au";
         String userNamePrefix = "GouthamSaji";
 
         for (int i = 0; i < 10; i++) {
