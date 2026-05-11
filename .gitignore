@@ -1,4 +1,8 @@
 target/
+*.zip
+__pycache__/
+.pytest_cache/
+.venv/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
